@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:my_school/connect.dart';
+import 'package:mysql1/mysql1.dart';
 
 class GuestbookFormScreen extends StatefulWidget {
   static const String routeName = '/guest_book_form';
@@ -15,7 +17,26 @@ class _GuestbookFormScreenState extends State<GuestbookFormScreen> {
   final _messageController = TextEditingController();
   final _emailController = TextEditingController();
 
-  Future<void> _submit() async {}
+  Future<void> _submit() async {
+    if (_formKey.currentState!.validate()) {
+      var connection = await MySqlConnection.connect(Connect.settings);
+
+      var result = await connection.query('''
+        INSERT INTO guestbooks (name, message, email)
+        VALUES (?, ?, ?)
+      ''', [
+        _nameController.text,
+        _messageController.text,
+        _emailController.text
+      ]);
+
+      if (result.insertId != null) {
+        Navigator.pop(context);
+      }
+
+      connection.close();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +82,12 @@ class _GuestbookFormScreenState extends State<GuestbookFormScreen> {
                       labelText: 'อีเมล',
                     ),
                     validator: (value) {
+                      // regex
+                      if (value != null &&
+                          !RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
+                              .hasMatch(value)) {
+                        return 'กรุณากรอกอีเมลให้ถูกต้อง';
+                      }
                       if (value == null) {
                         return 'กรุณากรอกอีเมล';
                       }
